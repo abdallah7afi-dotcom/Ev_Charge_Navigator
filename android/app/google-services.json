@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "842881993378",
+    "project_id": "ev-charge-navigator-bbf10",
+    "storage_bucket": "ev-charge-navigator-bbf10.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842881993378:android:0085a2e6e1b9668933a5fb",
+        "android_client_info": {
+          "package_name": "com.evchargenavigator.ev_charge_navigator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMQ2fpkAYz5jms7217JLRfFIAE3uq7x0c"
+        },
+        {
+          "current_key": "AIzaSyCej-wa6svkauDl8aJYLrFMlfFD4b13yA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842881993378:android:3c806a32027757b833a5fb",
+        "android_client_info": {
+          "package_name": "com.example.ev_charge_navigator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMQ2fpkAYz5jms7217JLRfFIAE3uq7x0c"
+        },
+        {
+          "current_key": "AIzaSyCej-wa6svkauDl8aJYLrFMlfFD4b13yA4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
