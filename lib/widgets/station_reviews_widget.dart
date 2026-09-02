@@ -7,10 +7,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 class StationReviewsWidget extends StatefulWidget {
   final String stationId;
 
-  const StationReviewsWidget({
-    super.key,
-    required this.stationId,
-  });
+  const StationReviewsWidget({super.key, required this.stationId});
 
   @override
   State<StationReviewsWidget> createState() => _StationReviewsWidgetState();
@@ -31,30 +28,32 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a comment before submitting.')),
+        const SnackBar(
+          content: Text('Please enter a comment before submitting.'),
+        ),
       );
       return;
     }
 
     setState(() => _isSubmitting = true);
-
     try {
       final user = FirebaseAuth.instance.currentUser;
       final userId = user?.uid ?? 'anonymous';
-      final userName = user?.displayName ?? user?.email?.split('@').first ?? 'EV Driver';
+      final userName =
+          user?.displayName ?? user?.email?.split('@').first ?? 'EV Driver';
 
       await FirebaseFirestore.instance
           .collection('charging_stations')
           .doc(widget.stationId)
           .collection('reviews')
           .add({
-        'stationId': widget.stationId,
-        'userId': userId,
-        'userName': userName,
-        'rating': _userRating,
-        'comment': commentText,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+            'stationId': widget.stationId,
+            'userId': userId,
+            'userName': userName,
+            'rating': _userRating,
+            'comment': commentText,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
 
       _commentController.clear();
 
@@ -65,9 +64,9 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error submitting review: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error submitting review: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -82,10 +81,7 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
         // Section Header
         Text(
           'Reviews & Comments',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
 
@@ -117,10 +113,8 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                 allowHalfRating: true,
                 itemCount: 5,
                 itemSize: 28,
-                itemBuilder: (context, _) => const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                ),
+                itemBuilder: (context, _) =>
+                    const Icon(Icons.star, color: Colors.amber),
                 onRatingUpdate: (rating) {
                   setState(() => _userRating = rating);
                 },
@@ -133,7 +127,10 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Type your experience or comment here...',
-                  hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
                   fillColor: Colors.white,
                   filled: true,
                   border: OutlineInputBorder(
@@ -153,7 +150,10 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                       ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.send, size: 16),
                   label: Text(
@@ -211,7 +211,10 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                 ),
                 child: Text(
                   'No reviews yet. Be the first to leave a comment!',
-                  style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               );
@@ -248,7 +251,9 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                               radius: 14,
                               backgroundColor: Theme.of(context).primaryColor,
                               child: Text(
-                                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : 'U',
                                 style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -270,7 +275,9 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                               mainAxisSize: MainAxisSize.min,
                               children: List.generate(5, (starIdx) {
                                 return Icon(
-                                  starIdx < rating.floor() ? Icons.star : Icons.star_border,
+                                  starIdx < rating.floor()
+                                      ? Icons.star
+                                      : Icons.star_border,
                                   color: Colors.amber,
                                   size: 14,
                                 );
@@ -279,7 +286,10 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                             const SizedBox(width: 6),
                             Text(
                               dateStr,
-                              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -287,7 +297,10 @@ class _StationReviewsWidgetState extends State<StationReviewsWidget> {
                           const SizedBox(height: 6),
                           Text(
                             comment,
-                            style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
                           ),
                         ],
                       ],

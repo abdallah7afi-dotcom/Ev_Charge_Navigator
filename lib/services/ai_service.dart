@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:ev_charge_navigator/models/station_model.dart';
 import 'package:ev_charge_navigator/utils/battery_estimator.dart';
@@ -32,20 +33,22 @@ class AiService {
     double? consumptionRate,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/predict-consumption'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'distance_km': distanceKm,
-          'elevation_gain_m': elevationGainM,
-          'elevation_loss_m': elevationLossM,
-          'temperature_c': temperatureC,
-          'traffic_level': trafficLevel,
-          'battery_capacity_kwh': batteryCapacityKwh,
-          'consumption_rate': consumptionRate,
-          'current_battery_pct': currentBatteryPct,
-        }),
-      ).timeout(_timeout);
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/api/predict-consumption'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'distance_km': distanceKm,
+              'elevation_gain_m': elevationGainM,
+              'elevation_loss_m': elevationLossM,
+              'temperature_c': temperatureC,
+              'traffic_level': trafficLevel,
+              'battery_capacity_kwh': batteryCapacityKwh,
+              'consumption_rate': consumptionRate,
+              'current_battery_pct': currentBatteryPct,
+            }),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -110,15 +113,15 @@ class AiService {
 
     if (!feasible) {
       final compatibleStations = _filterCompatible(stations, plugType);
-      final nearest = _findNearest(
-        originLat, originLng, compatibleStations,
-      );
+      final nearest = _findNearest(originLat, originLng, compatibleStations);
 
       if (nearest != null) {
         // Check if we can reach the charging station
         final distToStation = _haversine(
-          originLat, originLng,
-          nearest.latitude, nearest.longitude,
+          originLat,
+          originLng,
+          nearest.latitude,
+          nearest.longitude,
         );
 
         final toStationPrediction = await predictConsumption(
@@ -132,13 +135,15 @@ class AiService {
 
         final canReachStation = toStationPrediction.remainingBatteryPct >= 5.0;
 
-        chargingStops.add(ChargingStop(
-          station: nearest,
-          distanceFromOriginKm: distToStation,
-          canReach: canReachStation,
-          batteryAtStation: toStationPrediction.remainingBatteryPct,
-          chargeToPct: 80.0,
-        ));
+        chargingStops.add(
+          ChargingStop(
+            station: nearest,
+            distanceFromOriginKm: distToStation,
+            canReach: canReachStation,
+            batteryAtStation: toStationPrediction.remainingBatteryPct,
+            chargeToPct: 80.0,
+          ),
+        );
 
         revisedFeasible = canReachStation;
       }
@@ -186,8 +191,10 @@ class AiService {
       energyConsumedKwh: adjustedEnergy,
       energyPctUsed: adjustedPctUsed,
       remainingBatteryPct: adjustedRemaining.clamp(0, 100),
-      remainingBatteryKwh:
-          (adjustedRemaining / 100 * batteryCapacityKwh).clamp(0, batteryCapacityKwh),
+      remainingBatteryKwh: (adjustedRemaining / 100 * batteryCapacityKwh).clamp(
+        0,
+        batteryCapacityKwh,
+      ),
       feasible: adjustedRemaining >= 20.0,
       vehicleCategory: result.vehicleCategory.label,
       climateFactor: result.climateFactor,
@@ -205,7 +212,9 @@ class AiService {
   ) {
     if (plugType.isEmpty) return stations;
     return stations
-        .where((s) => s.connectorType.toLowerCase().contains(plugType.toLowerCase()))
+        .where(
+          (s) => s.connectorType.toLowerCase().contains(plugType.toLowerCase()),
+        )
         .toList();
   }
 
@@ -230,46 +239,20 @@ class AiService {
     return nearest;
   }
 
-  /// Haversine distance (km).
+  /// Haversine distance (km), using dart:math's built-in trig functions
+  /// for full accuracy (no approximation).
   static double _haversine(double lat1, double lng1, double lat2, double lng2) {
     const R = 6371.0;
-    final dLat = (lat2 - lat1) * 3.14159265 / 180;
-    final dLng = (lng2 - lng1) * 3.14159265 / 180;
-    final a = _sin(dLat / 2) * _sin(dLat / 2) +
-        _cos(lat1 * 3.14159265 / 180) *
-            _cos(lat2 * 3.14159265 / 180) *
-            _sin(dLng / 2) *
-            _sin(dLng / 2);
-    return R * 2 * _atan2(_sqrt(a), _sqrt(1 - a));
+    final dLat = (lat2 - lat1) * math.pi / 180;
+    final dLng = (lng2 - lng1) * math.pi / 180;
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) *
+            math.cos(lat2 * math.pi / 180) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
-
-  // dart:math wrappers to avoid import conflicts
-  static double _sin(double x) => x - (x * x * x) / 6 + (x * x * x * x * x) / 120;
-  static double _cos(double x) => 1 - (x * x) / 2 + (x * x * x * x) / 24;
-  static double _sqrt(double x) => x > 0 ? _pow(x, 0.5) : 0;
-  static double _pow(double base, double exp) {
-    // Use iterative Newton's method for sqrt
-    if (exp == 0.5) {
-      double guess = base / 2;
-      for (int i = 0; i < 20; i++) {
-        guess = (guess + base / guess) / 2;
-      }
-      return guess;
-    }
-    return base;
-  }
-
-  static double _atan2(double y, double x) {
-    if (x > 0) return _atan(y / x);
-    if (x < 0 && y >= 0) return _atan(y / x) + 3.14159265;
-    if (x < 0 && y < 0) return _atan(y / x) - 3.14159265;
-    if (x == 0 && y > 0) return 3.14159265 / 2;
-    if (x == 0 && y < 0) return -3.14159265 / 2;
-    return 0;
-  }
-
-  static double _atan(double x) =>
-      x - (x * x * x) / 3 + (x * x * x * x * x) / 5;
 }
 
 // ──────────────────────────────────────────────────────────────

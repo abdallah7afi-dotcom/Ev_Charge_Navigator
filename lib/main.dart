@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -26,9 +27,13 @@ void main() async {
 
   // Auto-Load Seed Stations on Startup if Firestore collection is empty
   try {
-    await FirestoreService().seedStationsIfEmpty(StationSeedService.riyadhStations);
+    await FirestoreService().seedStationsIfEmpty(
+      StationSeedService.riyadhStations,
+    );
     await AuthService().seedAdminAccountIfEmpty();
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('Startup seeding failed: $e');
+  }
 
   runApp(const EVChargeNavigatorApp());
 }

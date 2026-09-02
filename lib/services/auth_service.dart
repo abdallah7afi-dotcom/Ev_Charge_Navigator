@@ -18,7 +18,7 @@ class AuthService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get userName => _userName;
   String get userRole => _userRole;
-  bool get isAdmin => _userRole == 'admin' || (_user?.email?.contains('admin') ?? false);
+  bool get isAdmin => _userRole == 'admin';
 
   AuthService() {
     _auth.authStateChanges().listen((User? user) {
@@ -34,10 +34,16 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Admin Auto-Seeding: Checks if default admin exists in Auth.
-  /// If no admin exists, creates default admin@evcharge.com / password123.
+  /// If no admin exists, creates a default admin account for demo/testing
+  /// purposes only.
+  ///
+  /// IMPORTANT: this default password is for academic demo/testing only.
+  /// Before any real/commercial deployment, this seeding call must be
+  /// removed from main.dart and the admin account's password changed
+  /// through Firebase Authentication directly.
   Future<void> seedAdminAccountIfEmpty() async {
     const adminEmail = 'admin@evcharge.com';
-    const adminPassword = 'password123';
+    const adminPassword = 'EvCharge#Admin2026!';
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
         email: adminEmail,
@@ -69,10 +75,6 @@ class AuthService extends ChangeNotifier {
         final data = doc.data();
         _userName = data?['name'] ?? '';
         _userRole = data?['role'] ?? 'customer';
-        if (_user?.email != null && _user!.email!.toLowerCase().contains('admin') && _userRole != 'admin') {
-          _userRole = 'admin';
-          await _db.collection('users').doc(_user!.uid).update({'role': 'admin'});
-        }
         notifyListeners();
       }
     } catch (e) {
@@ -86,19 +88,10 @@ class AuthService extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      try {
-        await _auth.signInWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        );
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password') {
-          if (email.trim().toLowerCase() == 'admin@evcharge.com') {
-            return await register(email, password, 'System Administrator', role: 'admin');
-          }
-        }
-        rethrow;
-      }
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
       await _fetchUserData();
 
@@ -118,7 +111,12 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String email, String password, String name, {String role = 'client'}) async {
+  Future<bool> register(
+    String email,
+    String password,
+    String name, {
+    String role = 'client',
+  }) async {
     try {
       _isLoading = true;
       _errorMessage = null;
@@ -129,19 +127,20 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
 
-      final assignedRole = (email.trim().toLowerCase().contains('admin')) ? 'admin' : role;
-
-      // Create user document in Firestore with role
+      // Create user document in Firestore with role.
+      // Role is never derived from the email string — only an existing
+      // admin (via the Admin Panel's user management tab) can promote
+      // an account to 'admin' by updating this Firestore field directly.
       await _db.collection('users').doc(credential.user!.uid).set({
         'uid': credential.user!.uid,
         'name': name.trim(),
         'email': email.trim(),
-        'role': assignedRole,
+        'role': role,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       _userName = name.trim();
-      _userRole = assignedRole;
+      _userRole = role;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -177,7 +176,8 @@ class AuthService extends ChangeNotifier {
       return false;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'Failed to send password reset email. Please check address.';
+      _errorMessage =
+          'Failed to send password reset email. Please check address.';
       notifyListeners();
       return false;
     }
