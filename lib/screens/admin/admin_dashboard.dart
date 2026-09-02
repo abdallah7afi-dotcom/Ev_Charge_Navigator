@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'package:ev_charge_navigator/theme/app_theme.dart';
 import 'package:ev_charge_navigator/services/firestore_service.dart';
+import 'package:ev_charge_navigator/services/auth_service.dart';
 import 'package:ev_charge_navigator/models/station_model.dart';
 import 'package:ev_charge_navigator/models/car_model.dart';
 
@@ -32,6 +34,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   @override
   Widget build(BuildContext context) {
+    // Page-level authorization guard: even if a non-admin user reaches
+    // this route directly (e.g. Navigator.pushNamed('/admin')), the
+    // admin tabs and data are never built for them. Hiding the drawer
+    // button alone is not sufficient authorization.
+    final isAdmin = context.watch<AuthService>().isAdmin;
+    if (!isAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Access Denied')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              'You do not have permission to view this page.',
+              style: GoogleFonts.inter(fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -55,7 +78,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           indicatorColor: AppColors.accent,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+          labelStyle: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
           tabs: const [
             Tab(icon: Icon(Icons.ev_station), text: 'Stations'),
             Tab(icon: Icon(Icons.people_alt), text: 'Users'),
@@ -119,17 +145,21 @@ class __AdminStationManagementTabState
     final nameCtrl = TextEditingController(text: station?.name ?? '');
     final addressCtrl = TextEditingController(text: station?.address ?? '');
     final latCtrl = TextEditingController(
-        text: station != null ? station.latitude.toString() : '24.7136');
+      text: station != null ? station.latitude.toString() : '24.7136',
+    );
     final lngCtrl = TextEditingController(
-        text: station != null ? station.longitude.toString() : '46.6753');
-    final connectorCtrl =
-        TextEditingController(text: station?.connectorType ?? 'CCS2');
+      text: station != null ? station.longitude.toString() : '46.6753',
+    );
+    final connectorCtrl = TextEditingController(
+      text: station?.connectorType ?? 'CCS2',
+    );
     final powerCtrl = TextEditingController(
-        text: station != null ? station.power.toString() : '150');
-    final feeCtrl = TextEditingController(
-        text: station?.fee ?? '1.20 SAR/kWh');
-    final providerCtrl =
-        TextEditingController(text: station?.provider ?? 'EVIQ');
+      text: station != null ? station.power.toString() : '150',
+    );
+    final feeCtrl = TextEditingController(text: station?.fee ?? '1.20 SAR/kWh');
+    final providerCtrl = TextEditingController(
+      text: station?.provider ?? 'EVIQ',
+    );
     String selectedStatus = station?.status ?? 'Available';
 
     showDialog(
@@ -179,8 +209,9 @@ class __AdminStationManagementTabState
                   Expanded(
                     child: TextField(
                       controller: connectorCtrl,
-                      decoration:
-                          const InputDecoration(labelText: 'Connector Type'),
+                      decoration: const InputDecoration(
+                        labelText: 'Connector Type',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -188,7 +219,9 @@ class __AdminStationManagementTabState
                     child: TextField(
                       controller: powerCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Power (kW)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Power (kW)',
+                      ),
                     ),
                   ),
                 ],
@@ -199,7 +232,9 @@ class __AdminStationManagementTabState
                   Expanded(
                     child: TextField(
                       controller: feeCtrl,
-                      decoration: const InputDecoration(labelText: 'Fee / Price'),
+                      decoration: const InputDecoration(
+                        labelText: 'Fee / Price',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -228,7 +263,10 @@ class __AdminStationManagementTabState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -259,9 +297,11 @@ class __AdminStationManagementTabState
                 _loadStations();
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   SnackBar(
-                    content: Text(station == null
-                        ? '✅ Station added successfully'
-                        : '✅ Station updated successfully'),
+                    content: Text(
+                      station == null
+                          ? '✅ Station added successfully'
+                          : '✅ Station updated successfully',
+                    ),
                     backgroundColor: AppColors.positive,
                   ),
                 );
@@ -282,9 +322,16 @@ class __AdminStationManagementTabState
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: AppColors.negative, size: 28),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.negative,
+              size: 28,
+            ),
             const SizedBox(width: 8),
-            Text('Delete Station?', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            Text(
+              'Delete Station?',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(
@@ -294,7 +341,10 @@ class __AdminStationManagementTabState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -310,7 +360,9 @@ class __AdminStationManagementTabState
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.negative),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.negative,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -321,9 +373,11 @@ class __AdminStationManagementTabState
   @override
   Widget build(BuildContext context) {
     final filtered = _stations
-        .where((s) =>
-            s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            s.provider.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (s) =>
+              s.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              s.provider.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
 
     return Column(
@@ -360,81 +414,89 @@ class __AdminStationManagementTabState
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : filtered.isEmpty
-                  ? Center(
-                      child: Text('No stations found',
-                          style: GoogleFonts.inter(color: AppColors.textMuted)))
-                  : ListView.builder(
-                      itemCount: filtered.length,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemBuilder: (ctx, idx) {
-                        final st = filtered[idx];
-                        Color statusColor = AppColors.positive;
-                        if (st.status == 'Occupied') statusColor = Colors.orange;
-                        if (st.status == 'Maintenance') statusColor = Colors.purple;
-                        if (st.status == 'Offline') statusColor = AppColors.negative;
+              ? Center(
+                  child: Text(
+                    'No stations found',
+                    style: GoogleFonts.inter(color: AppColors.textMuted),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: filtered.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemBuilder: (ctx, idx) {
+                    final st = filtered[idx];
+                    Color statusColor = AppColors.positive;
+                    if (st.status == 'Occupied') statusColor = Colors.orange;
+                    if (st.status == 'Maintenance') statusColor = Colors.purple;
+                    if (st.status == 'Offline')
+                      statusColor = AppColors.negative;
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: statusColor.withValues(alpha: 0.15),
-                              child: Icon(Icons.ev_station, color: statusColor),
-                            ),
-                            title: Text(
-                              st.name,
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${st.provider} • ${st.power.toStringAsFixed(0)} kW • ${st.connectorType}\n${st.fee}',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    st.status,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                IconButton(
-                                  iconSize: 18,
-                                  constraints: const BoxConstraints(),
-                                  padding: const EdgeInsets.all(4),
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () => _showStationFormDialog(st),
-                                ),
-                                IconButton(
-                                  iconSize: 18,
-                                  constraints: const BoxConstraints(),
-                                  padding: const EdgeInsets.all(4),
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: AppColors.negative),
-                                  onPressed: () => _confirmDeleteStation(st),
-                                ),
-                              ],
-                            ),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: statusColor.withValues(alpha: 0.15),
+                          child: Icon(Icons.ev_station, color: statusColor),
+                        ),
+                        title: Text(
+                          st.name,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                        subtitle: Text(
+                          '${st.provider} • ${st.power.toStringAsFixed(0)} kW • ${st.connectorType}\n${st.fee}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                st.status,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              iconSize: 18,
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(4),
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _showStationFormDialog(st),
+                            ),
+                            IconButton(
+                              iconSize: 18,
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(4),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: AppColors.negative,
+                              ),
+                              onPressed: () => _confirmDeleteStation(st),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -449,17 +511,27 @@ class _AdminUserManagementTab extends StatelessWidget {
 
   const _AdminUserManagementTab({required this.firestoreService});
 
-  void _confirmDeleteUser(BuildContext context, String uid, String nameOrEmail) {
+  void _confirmDeleteUser(
+    BuildContext context,
+    String uid,
+    String nameOrEmail,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: AppColors.negative, size: 28),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.negative,
+              size: 28,
+            ),
             const SizedBox(width: 8),
-            Text('Delete User Account?',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            Text(
+              'Delete User Account?',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Text(
@@ -469,7 +541,10 @@ class _AdminUserManagementTab extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -484,7 +559,9 @@ class _AdminUserManagementTab extends StatelessWidget {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.negative),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.negative,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -513,7 +590,10 @@ class _AdminUserManagementTab extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -528,7 +608,9 @@ class _AdminUserManagementTab extends StatelessWidget {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.negative),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.negative,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -539,8 +621,9 @@ class _AdminUserManagementTab extends StatelessWidget {
   void _showEditCarDialog(BuildContext context, String uid, CarModel car) {
     final nameCtrl = TextEditingController(text: car.name);
     final connectorCtrl = TextEditingController(text: car.connectorType);
-    final batteryCtrl =
-        TextEditingController(text: car.batteryCapacity.toStringAsFixed(0));
+    final batteryCtrl = TextEditingController(
+      text: car.batteryCapacity.toStringAsFixed(0),
+    );
 
     showDialog(
       context: context,
@@ -560,20 +643,27 @@ class _AdminUserManagementTab extends StatelessWidget {
             const SizedBox(height: 10),
             TextField(
               controller: connectorCtrl,
-              decoration: const InputDecoration(labelText: 'Connector Type (e.g. CCS2, Type 2)'),
+              decoration: const InputDecoration(
+                labelText: 'Connector Type (e.g. CCS2, Type 2)',
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: batteryCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Battery Capacity (kWh)'),
+              decoration: const InputDecoration(
+                labelText: 'Battery Capacity (kWh)',
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -583,7 +673,9 @@ class _AdminUserManagementTab extends StatelessWidget {
                 id: car.id,
                 name: newName,
                 connectorType: connectorCtrl.text.trim(),
-                batteryCapacity: double.tryParse(batteryCtrl.text.trim()) ?? car.batteryCapacity,
+                batteryCapacity:
+                    double.tryParse(batteryCtrl.text.trim()) ??
+                    car.batteryCapacity,
               );
               await firestoreService.saveCar(uid, updatedCar);
               if (ctx.mounted) {
@@ -656,8 +748,9 @@ class _AdminUserManagementTab extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: ExpansionTile(
                 leading: CircleAvatar(
-                  backgroundColor:
-                      isAdmin ? AppColors.accent : AppColors.primaryLight,
+                  backgroundColor: isAdmin
+                      ? AppColors.accent
+                      : AppColors.primaryLight,
                   child: Icon(
                     isAdmin ? Icons.shield : Icons.person,
                     color: Colors.white,
@@ -714,7 +807,10 @@ class _AdminUserManagementTab extends StatelessWidget {
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     color: Colors.grey.shade50,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -753,8 +849,9 @@ class _AdminUserManagementTab extends StatelessWidget {
 
                             if (carDocs.isEmpty) {
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 child: Text(
                                   'No vehicle profiles registered for this user.',
                                   style: GoogleFonts.inter(
@@ -770,17 +867,14 @@ class _AdminUserManagementTab extends StatelessWidget {
                               children: carDocs.map((cDoc) {
                                 final cData =
                                     cDoc.data() as Map<String, dynamic>;
-                                final car =
-                                    CarModel.fromMap(cData, cDoc.id);
+                                final car = CarModel.fromMap(cData, cDoc.id);
 
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 6),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: AppColors.border,
-                                    ),
+                                    border: Border.all(color: AppColors.border),
                                   ),
                                   child: ListTile(
                                     dense: true,
@@ -953,13 +1047,29 @@ class __AdminReportsTabState extends State<_AdminReportsTab> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildStatusRow('Available', _reports?['availableStations'] ?? 0, AppColors.positive),
+                  _buildStatusRow(
+                    'Available',
+                    _reports?['availableStations'] ?? 0,
+                    AppColors.positive,
+                  ),
                   const Divider(),
-                  _buildStatusRow('Occupied', _reports?['occupiedStations'] ?? 0, Colors.orange),
+                  _buildStatusRow(
+                    'Occupied',
+                    _reports?['occupiedStations'] ?? 0,
+                    Colors.orange,
+                  ),
                   const Divider(),
-                  _buildStatusRow('Maintenance', _reports?['maintenanceStations'] ?? 0, Colors.purple),
+                  _buildStatusRow(
+                    'Maintenance',
+                    _reports?['maintenanceStations'] ?? 0,
+                    Colors.purple,
+                  ),
                   const Divider(),
-                  _buildStatusRow('Offline', _reports?['offlineStations'] ?? 0, AppColors.negative),
+                  _buildStatusRow(
+                    'Offline',
+                    _reports?['offlineStations'] ?? 0,
+                    AppColors.negative,
+                  ),
                 ],
               ),
             ),
@@ -976,7 +1086,12 @@ class __AdminReportsTabState extends State<_AdminReportsTab> {
     );
   }
 
-  Widget _buildReportCard(String title, String val, IconData icon, Color color) {
+  Widget _buildReportCard(
+    String title,
+    String val,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -990,11 +1105,21 @@ class __AdminReportsTabState extends State<_AdminReportsTab> {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 8),
-            Text(val,
-                style: GoogleFonts.inter(
-                    fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-            Text(title,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+            Text(
+              val,
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+            ),
           ],
         ),
       ),
